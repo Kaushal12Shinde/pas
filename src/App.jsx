@@ -20,7 +20,12 @@ function App() {
       // await updateShopifyMetafield("pricing", "labour_rate", labour_rate, "number_decimal");
       // await updateShopifyMetafield("pricing", "gst_rate", gst_rate, "number_decimal");
 
-      await updateAllProducts(gold_rate, labour_rate, gst_rate);
+        
+      await fetch("https://pas-server-umber.vercel.app/api/updatePrices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ gold_rate, labour_rate, gst_rate })
+      });
 
       setStatus("Rates updated successfully!");
     }
@@ -48,76 +53,76 @@ function App() {
     //   });
     // }
 
-      async function updateAllProducts(gold_rate, labour_rate, gst_rate) {
-  console.log("Starting product price update...");
+//       async function updateAllProducts(gold_rate, labour_rate, gst_rate) {
+//   console.log("Starting product price update...");
   
-  let page = 1;
-  let hasMore = true;
+//   let page = 1;
+//   let hasMore = true;
 
-  while (hasMore) {
-    const res = await fetch(`https://${SHOPIFY_STORE}/admin/api/2023-10/products.json?limit=50&page=${page}&status=active`, {
-      headers: { "X-Shopify-Access-Token": ACCESS_TOKEN }
-    });
+//   while (hasMore) {
+//     const res = await fetch(`https://${SHOPIFY_STORE}/admin/api/2023-10/products.json?limit=50&page=${page}&status=active`, {
+//       headers: { "X-Shopify-Access-Token": ACCESS_TOKEN }
+//     });
     
-    const data = await res.json();
-    if (!data.products || data.products.length === 0) {
-      hasMore = false;
-      break;
-    }
+//     const data = await res.json();
+//     if (!data.products || data.products.length === 0) {
+//       hasMore = false;
+//       break;
+//     }
 
-    for (const product of data.products) {
-      try {
-        // Fetch product metafields
-        const metaRes = await fetch(`https://${SHOPIFY_STORE}/admin/api/2023-10/products/${product.id}/metafields.json`, {
-          headers: { "X-Shopify-Access-Token": ACCESS_TOKEN }
-        });
-        const { metafields } = await metaRes.json();
+//     for (const product of data.products) {
+//       try {
+//         // Fetch product metafields
+//         const metaRes = await fetch(`https://${SHOPIFY_STORE}/admin/api/2023-10/products/${product.id}/metafields.json`, {
+//           headers: { "X-Shopify-Access-Token": ACCESS_TOKEN }
+//         });
+//         const { metafields } = await metaRes.json();
 
-        const gold_weight = parseFloat(metafields.find(m => m.key === "gold_weight")?.value || 0);
-        const diamond_price = parseFloat(metafields.find(m => m.key === "diamond_price")?.value || 0);
-        const diamond_weight = parseFloat(metafields.find(m => m.key === "diamond_weight")?.value || 0);
-        const total_weight = gold_weight + diamond_weight;
+//         const gold_weight = parseFloat(metafields.find(m => m.key === "gold_weight")?.value || 0);
+//         const diamond_price = parseFloat(metafields.find(m => m.key === "diamond_price")?.value || 0);
+//         const diamond_weight = parseFloat(metafields.find(m => m.key === "diamond_weight")?.value || 0);
+//         const total_weight = gold_weight + diamond_weight;
 
-        // Formula
-        const goldPrice = gold_rate * gold_weight;
-        const labourPrice = labour_rate * total_weight;
-        const basePrice = goldPrice + labourPrice + diamond_price;
-        const finalPrice = basePrice + (basePrice * gst_rate / 100);
+//         // Formula
+//         const goldPrice = gold_rate * gold_weight;
+//         const labourPrice = labour_rate * total_weight;
+//         const basePrice = goldPrice + labourPrice + diamond_price;
+//         const finalPrice = basePrice + (basePrice * gst_rate / 100);
 
-        if (product.variants && product.variants.length > 0) {
-          const variantId = product.variants[0].id;
+//         if (product.variants && product.variants.length > 0) {
+//           const variantId = product.variants[0].id;
 
-          // Update price
-          const updateRes = await fetch(`https://${SHOPIFY_STORE}/admin/api/2023-10/variants/${variantId}.json`, {
-            method: "PUT",
-            headers: {
-              "X-Shopify-Access-Token": ACCESS_TOKEN,
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              variant: {
-                id: variantId,
-                price: finalPrice.toFixed(2)
-              }
-            })
-          });
+//           // Update price
+//           const updateRes = await fetch(`https://${SHOPIFY_STORE}/admin/api/2023-10/variants/${variantId}.json`, {
+//             method: "PUT",
+//             headers: {
+//               "X-Shopify-Access-Token": ACCESS_TOKEN,
+//               "Content-Type": "application/json"
+//             },
+//             body: JSON.stringify({
+//               variant: {
+//                 id: variantId,
+//                 price: finalPrice.toFixed(2)
+//               }
+//             })
+//           });
 
-          if (updateRes.ok) {
-            console.log(`✅ Updated ${product.title} → ₹${finalPrice.toFixed(2)}`);
-          } else {
-            console.log(`⚠️ Failed to update ${product.title}`);
-          }
-        }
-      } catch (err) {
-        console.error(`❌ Error updating product ${product.title}:`, err);
-      }
-    }
+//           if (updateRes.ok) {
+//             console.log(`✅ Updated ${product.title} → ₹${finalPrice.toFixed(2)}`);
+//           } else {
+//             console.log(`⚠️ Failed to update ${product.title}`);
+//           }
+//         }
+//       } catch (err) {
+//         console.error(`❌ Error updating product ${product.title}:`, err);
+//       }
+//     }
 
-    page++;
-  }
+//     page++;
+//   }
 
-  console.log("All active products updated successfully!");
-}
+//   console.log("All active products updated successfully!");
+// }
 
   return (
     <div className="rate-container">
